@@ -6,7 +6,7 @@ Python version started by Jason Gillman Jr.
 """
 
 from decimal import Decimal
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 
 
 class Parameter:
@@ -19,7 +19,7 @@ class Parameter:
         self.steps = steps
         self.normalized_value = Decimal(0)
 
-    def get_logical_value(self):
+    def get_logical_value(self) -> Decimal:
         if self.steps != -1:
             logical_value = round(self.normalized_value * (self.steps - 1))
         else:
@@ -27,14 +27,14 @@ class Parameter:
 
         return logical_value
 
-    def set_logical_value(self, logical_value: Decimal):
+    def set_logical_value(self, logical_value: Decimal) -> None:
         logical_value = Decimal(logical_value)  # Just in case it doesn't come in as one
         if self.steps != -1:
             self.normalized_value = logical_value / (self.steps - 1)
         else:
             self.normalized_value = logical_value
 
-    def get_formatted_value(self):
+    def get_formatted_value(self) -> str:
         if self.param_type == 'boolean':
             formatted_value = 'true' if self.normalized_value > Decimal(0.5) else 'false'
         else:
@@ -42,13 +42,13 @@ class Parameter:
 
         return formatted_value
 
-    def set_formatted_value(self, formatted_value: str):
+    def set_formatted_value(self, formatted_value: str) -> None:
         if self.param_type == 'boolean':
             self.normalized_value = 1 if formatted_value == 'true' else 0
         else:
             self.normalized_value = Decimal(formatted_value)
 
-    def get_xml(self):
+    def get_xml(self) -> ET.Element:
         """
         Return an XML element of the parameter
         :return:
@@ -61,6 +61,7 @@ class Parameter:
         element.text = self.get_formatted_value()
         return element
 
+
 class Preset:
     """
     A kHs ONE Preset
@@ -72,12 +73,6 @@ class Preset:
         """
         self.name = name
         self.version = version
-
-        # Apparently these bad johnsons were cool enough to be set independently
-        self.delay_time_ms = Parameter('DELAY_TIME_MS')
-        self.delay_time_16 = Parameter('DELAY_TIME_16TH', 'number', 24)
-        self.lfo2_rate_free = Parameter('LFO_2_RATE_FREE')
-        self.lfo2_rate_sync = Parameter('LFO_2_RATE_SYNC', 'number', 24)
 
         self.parameters = {}
 
@@ -210,3 +205,53 @@ class Preset:
 
         self.parameters['OSC_1_SYNC'] = Parameter('OSC_1_SYNC')
         self.parameters['OSC_2_SYNC'] = Parameter('OSC_2_SYNC')
+
+        # Treat these different - I believe these are Reason specific
+        self.delay_time_ms = Parameter('DELAY_TIME_MS')  # Derives from DELAY_TIME
+        self.delay_time_16 = Parameter('DELAY_TIME_16TH', 'number', 24)  # Derives from DELAY_TIME
+        self.lfo2_rate_free = Parameter('LFO_2_RATE_FREE')  # Derives from LFO_2_RATE
+        self.lfo2_rate_sync = Parameter('LFO_2_RATE_SYNC', 'number', 24)  # Derives from LFO_2_RATE
+
+        self.re_exclude_params = ['LFO_2_RATE', 'DELAY_TIME']
+
+    def save_re(self) -> bytes:
+        """
+        Return a bytes object of the Reason format
+        :return:
+        """
+
+        # Boilerplate
+        jukebox_patch = ET.Element('JukeboxPatch', version='1.0')
+
+        dnie = ET.Element('DeviceNameInEnglish')
+        dnie.text = 'kiloHearts kHs ONE'
+        jukebox_patch.append(dnie)
+
+        jbprops = ET.Element('Properties', deviceProductID='com.kilohearts.khsONE', deviceVersion='0.0.1')
+        jbprops_o = ET.Element('Object', name='custom_properties')
+        # End boilerplate
+
+        # Reason special snowflakes
+        dt = self.parameters['DELAY_TIME']
+        l2r = self.parameters['LFO_2_RATE']
+        self.delay_time_ms.normalized_value = pow(dt.normalized_value, Decimal(0.25))
+        self.delay_time_16.normalized_value = dt.normalized_value
+        self.lfo2_rate_free.normalized_value = l2r.normalized_value
+        self.lfo2_rate_sync.normalized_value = l2r.normalized_value
+
+        for pn, pd in self.parameters.items():
+            if pn not in self.re_exclude_params:
+                jbprops_o.append(pd.get_xml())
+
+        jbprops_o.append(self.delay_time_ms.get_xml())
+        jbprops_o.append(self.delay_time_16.get_xml())
+        jbprops_o.append(self.lfo2_rate_free.get_xml())
+        jbprops_o.append(self.lfo2_rate_sync.get_xml())
+
+        jbprops.append(jbprops_o)
+        jukebox_patch.append(jbprops)
+
+        jbprops.append(jbprops_o)
+        jukebox_patch.append(jbprops)
+
+        return ET.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
