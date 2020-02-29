@@ -6,6 +6,7 @@ Python version started by Jason Gillman Jr.
 """
 
 from decimal import Decimal
+from utils import convert_magic
 import lxml.etree as ET
 
 
@@ -66,13 +67,13 @@ class Preset:
     """
     A kHs ONE Preset
     """
-    def __init__(self, name: str, version: int = 1014):
+    def __init__(self, name: str):
         """
         We're basically instantiating a shit ton of Parameters here
         But doing some other stuff as well
         """
         self.name = name
-        self.version = version
+        self.current_version = 1014
 
         self.parameters = {}
 
@@ -255,3 +256,9 @@ class Preset:
         jukebox_patch.append(jbprops)
 
         return ET.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+
+    def save_au(self) -> bytes:
+        pass
+
+    def save_fxp(self) -> bytes:
+        pass
