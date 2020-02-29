@@ -1,5 +1,8 @@
 """
 Package to facilitate converting kHs One presets
+
+Original ActionScript code courtesy of Kilohearts
+Python version started by Jason Gillman Jr.
 """
 
 from decimal import Decimal
@@ -45,31 +48,30 @@ class Parameter:
         else:
             self.normalized_value = Decimal(formatted_value)
 
+    def get_xml(self):
+        """
+        Return an XML element of the parameter
+        :return:
+        """
+        attributes = {
+            'property': self.name,
+            'type': self.param_type,
+        }
+        element = ET.Element('Value', attrib=attributes, text=self.get_formatted_value())
+        # @TODO Something doesn't seem to work with this I don't think...
+        return element
 
 class Preset:
     """
     A kHs ONE Preset
     """
-    @staticmethod
-    def parameter_xml(parameter: Parameter):
-        """
-        Presumably it takes a Parameter and turns it into an XML slug
-        :param parameter:
-        :return:
-        """
-        attributes = {
-            'property': parameter.name,
-            'type': parameter.param_type,
-        }
-        element = ET.Element('Value', attrib=attributes, text=parameter.get_formatted_value())
-        # @TODO Something doesn't seem to work with this I don't think...
-        return element
-
-    def __init__(self):
+    def __init__(self, name: str, version: int = 1014):
         """
         We're basically instantiating a shit ton of Parameters here
         But doing some other stuff as well
         """
+        self.name = name
+        self.version = version
 
         # Apparently these bad johnsons were cool enough to be set independently
         self.delay_time_ms = Parameter('DELAY_TIME_MS')
