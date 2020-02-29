@@ -6,8 +6,9 @@ Python version started by Jason Gillman Jr.
 """
 
 from decimal import Decimal
-from utils import convert_magic
+from utils import convert_magic, write_uint_b
 import lxml.etree as ET
+import struct
 
 
 class Parameter:
@@ -261,4 +262,42 @@ class Preset:
         pass
 
     def save_fxp(self) -> bytes:
-        pass
+        """
+        FXP
+        :return:
+        """
+        data = bytearray()
+        data += write_uint_b(convert_magic('FPCh'))
+        data += write_uint_b(1)
+        data += write_uint_b(convert_magic('kHs1'))
+        data += write_uint_b(self.current_version)
+        data += write_uint_b(len(self.parameters))
+
+        cropped_name = self.name[0:24] if len(self.name) >= 24 else self.name
+        data += cropped_name.encode('utf-8')
+        for x in range(0, 28 - len(cropped_name)):
+            data += bytes(0)
+
+        chunk_data = self.save_to_chunk()
+        data += write_uint_b(len(chunk_data))
+        data += chunk_data
+
+        final_data = bytearray()
+        final_data += write_uint_b(convert_magic('CcnK'))
+        final_data += write_uint_b(len(data))
+        final_data += data
+
+        return final_data
+
+    def save_to_chunk(self) -> bytes:
+        """
+        This does... something
+        :return:
+        """
+        data = bytearray()
+        data += write_uint_b(self.current_version, False)
+        data += write_uint_b(len(self.parameters), False)
+        for x in self.parameters.values():
+            data += struct.pack('<f', x.normalized_value)
+
+        return data
