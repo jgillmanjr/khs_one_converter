@@ -57,8 +57,8 @@ class Parameter:
             'property': self.name,
             'type': self.param_type,
         }
-        element = ET.Element('Value', attrib=attributes, text=self.get_formatted_value())
-        # @TODO Something doesn't seem to work with this I don't think...
+        element = ET.Element('Value', attrib=attributes)
+        element.text = self.get_formatted_value()
         return element
 
 class Preset:
