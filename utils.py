@@ -13,12 +13,16 @@ def convert_magic(input: str):
     converted_magic = (ord(input[0]) << 24) | (ord(input[1]) << 16) | (ord(input[2]) << 8) | ord(input[3])
     return converted_magic
 
-def write_uint_b(input: int) -> bytes:
+def write_uint_b(input: int, big_endian: bool = True) -> bytes:
     """
     Dump 4 bytes from an int.
-    Big endian.
+    Big endian by default.
     Basically mimicing writeUnsignedInt from ActionScript
     :param input:
     :return:
     """
-    return input.to_bytes(4, 'big')
+    if big_endian:
+        endian = 'big'
+    else:
+        endian = 'little'
+    return input.to_bytes(4, endian)
