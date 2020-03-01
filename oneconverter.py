@@ -377,11 +377,36 @@ def process_fxp(data: bytes) -> Union[Preset, None]:
     return preset
 
 
-def read_chunk_into_preset(preset: Preset, chunk_data: bytes) -> bool:
+def read_chunk_into_preset(preset: Preset, chunk_data: bytearray) -> bool:
     """
     Load chunk data into the preset
     :param preset:
     :param chunk_data:
     :return:
     """
-    pass
+    preset.version = read_b_uint(chunk_data, False)
+    read_b_uint(chunk_data, False)  # param_count = read_b_uint(chunk_data, False)
+    for k in preset.param_keys:
+        preset.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))
+
+    return True
+
+
+def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[ET.Element, None]:
+    """
+    Get a particular value based on the key
+    :param plist_xml_bytes:
+    :param search_key:
+    :return:
+    """
+    plist = ET.XML(plist_xml_bytes)
+
+    result_idx = None
+
+    for i, x in enumerate(plist[0]):
+        if x.tag == 'key' and x.text == search_key:
+            result_idx = i + 1
+            break
+
+    if result_idx is not None:
+        return plist[0][result_idx]
