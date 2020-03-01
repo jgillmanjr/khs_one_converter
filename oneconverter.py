@@ -12,6 +12,9 @@ import struct
 import base64
 
 
+CURRENT_VERSION = 1014
+
+
 class Parameter:
     """
     A kHs ONE Preset Parameter
@@ -69,13 +72,13 @@ class Preset:
     """
     A kHs ONE Preset
     """
-    def __init__(self, name: str):
+    def __init__(self):
         """
         We're basically instantiating a shit ton of Parameters here
         But doing some other stuff as well
         """
-        self.name = name
-        self.current_version = 1014
+        self.name = None
+        self.version = None
 
         self.parameters = {}
 
@@ -298,7 +301,7 @@ class Preset:
         data += write_uint_b(convert_magic('FPCh'))
         data += write_uint_b(1)
         data += write_uint_b(convert_magic('kHs1'))
-        data += write_uint_b(self.current_version)
+        data += write_uint_b(self.version)
         data += write_uint_b(len(self.parameters))
 
         cropped_name = self.name[0:24] if len(self.name) >= 24 else self.name
@@ -323,7 +326,7 @@ class Preset:
         :return:
         """
         data = bytearray()
-        data += write_uint_b(self.current_version, False)
+        data += write_uint_b(self.version, False)
         data += write_uint_b(len(self.parameters), False)
         for x in self.parameters.values():
             data += struct.pack('<f', x.normalized_value)
