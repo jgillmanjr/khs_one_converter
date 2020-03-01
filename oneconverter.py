@@ -6,7 +6,9 @@ Python version started by Jason Gillman Jr.
 """
 
 from decimal import Decimal
-from utils import convert_magic, write_uint_b
+from utils import convert_magic, range_pop, read_b_uint, write_uint_b
+from typing import Union
+from collections import OrderedDict
 import lxml.etree as ET
 import struct
 import base64
@@ -80,7 +82,7 @@ class Preset:
         self.name = None
         self.version = None
 
-        self.parameters = {}
+        self.parameters = OrderedDict()
 
         self.parameters['OSC_1_WAVEFORM'] = Parameter('OSC_1_WAVEFORM', 'number', 3)
         self.parameters['OSC_1_GAIN'] = Parameter('OSC_1_GAIN')
@@ -212,6 +214,8 @@ class Preset:
         self.parameters['OSC_1_SYNC'] = Parameter('OSC_1_SYNC')
         self.parameters['OSC_2_SYNC'] = Parameter('OSC_2_SYNC')
 
+        self.param_keys = self.parameters.keys()  # Mostly so we can access the ordered dict by index
+
         # Treat these different - I believe these are Reason specific
         self.delay_time_ms = Parameter('DELAY_TIME_MS')  # Derives from DELAY_TIME
         self.delay_time_16 = Parameter('DELAY_TIME_16TH', 'number', 24)  # Derives from DELAY_TIME
@@ -332,3 +336,52 @@ class Preset:
             data += struct.pack('<f', x.normalized_value)
 
         return data
+
+
+def process_fxp(data: bytes) -> Union[Preset, None]:
+    preset = Preset()
+
+    data = bytearray(data)  # Now with 100% more mutability!
+
+    chunk_magic = read_b_uint(data)
+    read_b_uint(data)  # size = read_b_uint(data)
+    fx_magic = read_b_uint(data)
+    read_b_uint(data)  # format_version = read_b_uint(data)
+    fx_id = read_b_uint(data)
+    preset.version = read_b_uint(data)
+    read_b_uint(data)  # num_params = read_b_uint(data)
+    preset.name = range_pop(data, 0, 28).decode('utf-8')
+    chunk_size = read_b_uint(data)
+    chunk_data = range_pop(data, 0, chunk_size)
+
+    if chunk_magic != convert_magic('CcnK'):
+        print('Invalid chunkMagic')
+        return None
+
+    if fx_magic != convert_magic('FPCh'):
+        print('Unsupported fxMagic')
+        return None
+
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not seem to be for kHs ONE')
+        return None
+
+    if preset.version < CURRENT_VERSION:
+        print('Presets saved with a version of kHs ONE earlier than 1.014 are not supported')
+        return None
+
+    if not read_chunk_into_preset(preset, chunk_data):
+        print('Preset chunk data load failure')
+        return None
+
+    return preset
+
+
+def read_chunk_into_preset(preset: Preset, chunk_data: bytes) -> bool:
+    """
+    Load chunk data into the preset
+    :param preset:
+    :param chunk_data:
+    :return:
+    """
+    pass
