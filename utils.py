@@ -9,7 +9,7 @@ def convert_magic(input: str):
     :return:
     """
     if len(input) != 4:
-        raise Exception('Ooops. This should probably 4 characters...')
+        raise Exception('Ooops. This should probably have 4 characters...')
     converted_magic = (ord(input[0]) << 24) | (ord(input[1]) << 16) | (ord(input[2]) << 8) | ord(input[3])
     return converted_magic
 
