@@ -9,7 +9,7 @@ from decimal import Decimal
 from utils import convert_magic, range_pop, read_b_uint, write_uint_b
 from typing import Union
 from collections import OrderedDict
-import lxml.etree as ET
+import lxml.etree as et
 import struct
 import base64
 
@@ -56,7 +56,7 @@ class Parameter:
         else:
             self.normalized_value = Decimal(formatted_value)
 
-    def get_xml(self) -> ET.Element:
+    def get_xml(self) -> et.Element:
         """
         Return an XML element of the parameter
         :return:
@@ -65,7 +65,7 @@ class Parameter:
             'property': self.name,
             'type': self.param_type,
         }
-        element = ET.Element('Value', attrib=attributes)
+        element = et.Element('Value', attrib=attributes)
         element.text = self.get_formatted_value()
         return element
 
@@ -231,14 +231,14 @@ class Preset:
         """
 
         # Boilerplate
-        jukebox_patch = ET.Element('JukeboxPatch', version='1.0')
+        jukebox_patch = et.Element('JukeboxPatch', version='1.0')
 
-        dnie = ET.Element('DeviceNameInEnglish')
+        dnie = et.Element('DeviceNameInEnglish')
         dnie.text = 'kiloHearts kHs ONE'
         jukebox_patch.append(dnie)
 
-        jbprops = ET.Element('Properties', deviceProductID='com.kilohearts.khsONE', deviceVersion='0.0.1')
-        jbprops_o = ET.Element('Object', name='custom_properties')
+        jbprops = et.Element('Properties', deviceProductID='com.kilohearts.khsONE', deviceVersion='0.0.1')
+        jbprops_o = et.Element('Object', name='custom_properties')
         # End boilerplate
 
         # Reason special snowflakes
@@ -264,7 +264,7 @@ class Preset:
         jbprops.append(jbprops_o)
         jukebox_patch.append(jbprops)
 
-        return ET.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+        return et.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
 
     def save_au(self) -> bytes:
         """
@@ -272,7 +272,7 @@ class Preset:
         :return:
         """
         dctyp = '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
-        plist = ET.Element('plist', version='1.0')
+        plist = et.Element('plist', version='1.0')
 
         pld_dict = {
             'manufacturer': ('integer', 543901811),
@@ -282,19 +282,19 @@ class Preset:
             'version': ('integer', 1),
             'vstdata': ('data', base64.b64encode(self.save_fxp()).decode('utf-8')),
         }
-        pld = ET.Element('dict')
+        pld = et.Element('dict')
         for k, v in pld_dict.items():
-            t = ET.Element('key')
+            t = et.Element('key')
             t.text = k
             pld.append(t)
 
-            t = ET.Element(v[0])
+            t = et.Element(v[0])
             t.text = str(v[1])
             pld.append(t)
 
         plist.append(pld)
 
-        return ET.tostring(plist, encoding='UTF-8', xml_declaration=True, pretty_print=True, doctype=dctyp)
+        return et.tostring(plist, encoding='UTF-8', xml_declaration=True, pretty_print=True, doctype=dctyp)
 
     def save_fxp(self) -> bytes:
         """
@@ -392,14 +392,14 @@ def read_chunk_into_preset(preset: Preset, chunk_data: bytearray) -> bool:
     return True
 
 
-def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[ET.Element, None]:
+def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[et.Element, None]:
     """
     Get a particular value based on the key
     :param plist_xml_bytes:
     :param search_key:
     :return:
     """
-    plist = ET.XML(plist_xml_bytes)
+    plist = et.XML(plist_xml_bytes)
 
     result_idx = None
 
