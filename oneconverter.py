@@ -9,6 +9,7 @@ from decimal import Decimal
 from utils import convert_magic, write_uint_b
 import lxml.etree as ET
 import struct
+import base64
 
 
 class Parameter:
@@ -259,7 +260,34 @@ class Preset:
         return ET.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
 
     def save_au(self) -> bytes:
-        pass
+        """
+        Save AU data?
+        :return:
+        """
+        dctyp = '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+        plist = ET.Element('plist', version='1.0')
+
+        pld_dict = {
+            'manufacturer': ('integer', 543901811),
+            'name': ('string', self.name),
+            'subtype': ('integer', 1799910193),
+            'type': ('integer', 1635085685),
+            'version': ('integer', 1),
+            'vstdata': ('data', base64.b64encode(self.save_fxp()).decode('utf-8')),
+        }
+        pld = ET.Element('dict')
+        for k, v in pld_dict.items():
+            t = ET.Element('key')
+            t.text = k
+            pld.append(t)
+
+            t = ET.Element(v[0])
+            t.text = str(v[1])
+            pld.append(t)
+
+        plist.append(pld)
+
+        return ET.tostring(plist, encoding='UTF-8', xml_declaration=True, pretty_print=True, doctype=dctyp)
 
     def save_fxp(self) -> bytes:
         """
