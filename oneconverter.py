@@ -165,7 +165,7 @@ class Preset:
         self.parameters['MOD_ENV_AMT_2'] = Parameter('MOD_ENV_AMT_2')
         self.parameters['MOD_ENV_TARGET_3'] = Parameter('MOD_ENV_TARGET_3', 'number', 26)
         self.parameters['MOD_ENV_AMT_3'] = Parameter('MOD_ENV_AMT_3')
-        # I think MOD_ENV_DEPTH was supposed to go here, but it wasn't defined...
+        self.parameters['MOD_ENV_DEPTH'] = Parameter('MOD_ENV_DEPTH')
 
         self.parameters['VELOCITY_TARGET_1'] = Parameter('VELOCITY_TARGET_1', 'number', 39)
         self.parameters['VELOCITY_AMT_1'] = Parameter('VELOCITY_AMT_1')
