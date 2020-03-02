@@ -46,7 +46,7 @@ class Parameter:
         if self.param_type == 'boolean':
             formatted_value = 'true' if self.normalized_value > float(0.5) else 'false'
         else:
-            formatted_value = str(self.normalized_value)
+            formatted_value = str(self.get_logical_value())
 
         return formatted_value
 
@@ -54,7 +54,7 @@ class Parameter:
         if self.param_type == 'boolean':
             self.normalized_value = 1 if formatted_value == 'true' else 0
         else:
-            self.normalized_value = float(formatted_value)
+            self.set_logical_value(float(formatted_value))
 
     def get_xml(self) -> et.Element:
         """
