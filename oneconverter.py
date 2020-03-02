@@ -9,6 +9,7 @@ from decimal import Decimal
 from utils import convert_magic, range_pop, read_b_uint, write_uint_b
 from typing import Union
 from collections import OrderedDict
+from pathlib import Path
 import lxml.etree as et
 import struct
 import base64
@@ -336,6 +337,59 @@ class Preset:
             data += struct.pack('<f', x.normalized_value)
 
         return data
+
+
+def process_re(xml_data: bytes, preset_file: Path = Path('Test.file')) -> Union[Preset, None]:  # Preset name from file
+    """
+    Kick out a Reason Preset
+    :param xml_data:
+    :param preset_file:
+    :return:
+    """
+    jukebox_xml = et.XML(xml_data)
+
+    device_product_id = jukebox_xml[1].get('deviceProductID')
+    if device_product_id != 'com.kilohearts.khsONE':
+        print('Preset does not seem to be for kHs ONE')
+        return None
+
+    custom_properties = jukebox_xml[1][0]
+
+    preset = Preset()
+    preset.name = preset_file.stem
+
+    dt16: Parameter
+    dtms: Parameter
+    l2rs: Parameter
+    l2rf: Parameter
+    xfer_params = {}
+    for x in custom_properties:
+        param = x.get('property')
+        if param in preset.parameters:
+            preset.parameters[param].set_formatted_value(x.text)
+        else:
+            xfer_params[param] = Parameter(param, x.get('type'))
+            xfer_params[param].set_formatted_value(x.text)
+
+    dt16 = xfer_params['DELAY_TIME_16TH']
+    dtms = xfer_params['DELAY_TIME_MS']
+    if preset.parameters['DELAY_SYNC'].get_formatted_value():
+        preset.delay_time_16.set_formatted_value(dt16.get_formatted_value())
+        preset.parameters['DELAY_TIME'].set_formatted_value(dt16.get_formatted_value())
+    else:
+        preset.delay_time_ms.set_formatted_value(dtms.get_formatted_value())
+        preset.parameters['DELAY_TIME'].set_formatted_value(str(pow(dtms.normalized_value, Decimal(4))))
+
+    l2rs = xfer_params['LFO_2_RATE_SYNC']
+    l2rf = xfer_params['LFO_2_RATE_FREE']
+    if preset.parameters['LFO_2_SYNC'].get_formatted_value():
+        preset.lfo2_rate_sync.set_formatted_value(l2rs.get_formatted_value())
+        preset.parameters['LFO_2_RATE'].set_formatted_value(l2rs.get_formatted_value())
+    else:
+        preset.lfo2_rate_free.set_formatted_value(l2rf.get_formatted_value())
+        preset.parameters['LFO_2_RATE'].set_formatted_value(l2rf.get_formatted_value())
+
+    return preset
 
 
 def process_au(xml_data: bytes) -> Union[Preset, None]:
