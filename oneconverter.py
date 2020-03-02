@@ -268,7 +268,7 @@ class Preset:
 
     def save_au(self) -> bytes:
         """
-        Save AU data?
+        Return a bytes object of the AU format
         :return:
         """
         dctyp = '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
@@ -298,7 +298,7 @@ class Preset:
 
     def save_fxp(self) -> bytes:
         """
-        FXP
+        Return a bytes object of the FXP format
         :return:
         """
         data = bytearray()
@@ -338,7 +338,34 @@ class Preset:
         return data
 
 
+def process_au(xml_data: bytes) -> Union[Preset, None]:
+    """
+    Kick out an AU Preset
+    :param xml_data:
+    :return:
+    """
+    fx_id = int(find_au_value(xml_data, 'subtype').text)
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not appear to be for kHs ONE')
+        return None
+
+    fxp_data = base64.b64decode(find_au_value(xml_data, 'vstdata').text, validate=True)
+
+    preset = process_fxp(fxp_data)
+
+    if isinstance(preset, Preset):
+        preset.name = find_au_value(xml_data, 'name').text
+        return preset
+
+    return None
+
+
 def process_fxp(data: bytes) -> Union[Preset, None]:
+    """
+    Kick out an FXP Preset
+    :param data:
+    :return:
+    """
     preset = Preset()
 
     data = bytearray(data)  # Now with 100% more mutability!
@@ -410,25 +437,3 @@ def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[et.Element, 
 
     if result_idx is not None:
         return plist[0][result_idx]
-
-
-def process_au(xml_data: bytes) -> Union[Preset, None]:
-    """
-    Kick out an AU Preset
-    :param xml_data:
-    :return:
-    """
-    fx_id = int(find_au_value(xml_data, 'subtype').text)
-    if fx_id != convert_magic('kHs1'):
-        print('Preset does not appear to be for kHs ONE')
-        return None
-
-    fxp_data = base64.b64decode(find_au_value(xml_data, 'vstdata').text, validate=True)
-
-    preset = process_fxp(fxp_data)
-
-    if isinstance(preset, Preset):
-        preset.name = find_au_value(xml_data, 'name').text
-        return preset
-
-    return None
