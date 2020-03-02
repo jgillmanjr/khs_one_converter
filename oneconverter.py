@@ -311,7 +311,7 @@ class Preset:
         cropped_name = self.name[0:24] if len(self.name) >= 24 else self.name
         data += cropped_name.encode('utf-8')
         for x in range(0, 28 - len(cropped_name)):
-            data += bytes(0)
+            data += b'\x00'  # Spoiler alert: I'm a dumbass and found out bytes(0) doesn't work like I expected...
 
         chunk_data = self.save_to_chunk()
         data += write_uint_b(len(chunk_data))
@@ -410,3 +410,25 @@ def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[et.Element, 
 
     if result_idx is not None:
         return plist[0][result_idx]
+
+
+def process_au(xml_data: bytes) -> Union[Preset, None]:
+    """
+    Kick out an AU Preset
+    :param xml_data:
+    :return:
+    """
+    fx_id = int(find_au_value(xml_data, 'subtype').text)
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not appear to be for kHs ONE')
+        return None
+
+    fxp_data = base64.b64decode(find_au_value(xml_data, 'vstdata').text, validate=True)
+
+    preset = process_fxp(fxp_data)
+
+    if isinstance(preset, Preset):
+        preset.name = find_au_value(xml_data, 'name').text
+        return preset
+
+    return None
