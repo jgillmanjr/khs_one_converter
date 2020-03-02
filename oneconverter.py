@@ -5,7 +5,6 @@ Original ActionScript code courtesy of Kilohearts
 Python version started by Jason Gillman Jr.
 """
 
-from decimal import Decimal
 from utils import convert_magic, range_pop, read_b_uint, write_uint_b
 from typing import Union
 from collections import OrderedDict
@@ -26,9 +25,9 @@ class Parameter:
         self.name = name
         self.param_type = param_type
         self.steps = steps
-        self.normalized_value = Decimal(0)
+        self.normalized_value = float(0)
 
-    def get_logical_value(self) -> Decimal:
+    def get_logical_value(self) -> float:
         if self.steps != -1:
             logical_value = round(self.normalized_value * (self.steps - 1))
         else:
@@ -36,8 +35,8 @@ class Parameter:
 
         return logical_value
 
-    def set_logical_value(self, logical_value: Decimal) -> None:
-        logical_value = Decimal(logical_value)  # Just in case it doesn't come in as one
+    def set_logical_value(self, logical_value: float) -> None:
+        logical_value = float(logical_value)  # Just in case it doesn't come in as one
         if self.steps != -1:
             self.normalized_value = logical_value / (self.steps - 1)
         else:
@@ -45,7 +44,7 @@ class Parameter:
 
     def get_formatted_value(self) -> str:
         if self.param_type == 'boolean':
-            formatted_value = 'true' if self.normalized_value > Decimal(0.5) else 'false'
+            formatted_value = 'true' if self.normalized_value > float(0.5) else 'false'
         else:
             formatted_value = str(self.normalized_value)
 
@@ -55,7 +54,7 @@ class Parameter:
         if self.param_type == 'boolean':
             self.normalized_value = 1 if formatted_value == 'true' else 0
         else:
-            self.normalized_value = Decimal(formatted_value)
+            self.normalized_value = float(formatted_value)
 
     def get_xml(self) -> et.Element:
         """
@@ -245,7 +244,7 @@ class Preset:
         # Reason special snowflakes
         dt = self.parameters['DELAY_TIME']
         l2r = self.parameters['LFO_2_RATE']
-        self.delay_time_ms.normalized_value = pow(dt.normalized_value, Decimal(0.25))
+        self.delay_time_ms.normalized_value = pow(dt.normalized_value, float(0.25))
         self.delay_time_16.normalized_value = dt.normalized_value
         self.lfo2_rate_free.normalized_value = l2r.normalized_value
         self.lfo2_rate_sync.normalized_value = l2r.normalized_value
@@ -378,7 +377,7 @@ def process_re(xml_data: bytes, preset_file: Path = Path('Test.file')) -> Union[
         preset.parameters['DELAY_TIME'].set_formatted_value(dt16.get_formatted_value())
     else:
         preset.delay_time_ms.set_formatted_value(dtms.get_formatted_value())
-        preset.parameters['DELAY_TIME'].set_formatted_value(str(pow(dtms.normalized_value, Decimal(4))))
+        preset.parameters['DELAY_TIME'].set_formatted_value(str(pow(dtms.normalized_value, float(4))))
 
     l2rs = xfer_params['LFO_2_RATE_SYNC']
     l2rf = xfer_params['LFO_2_RATE_FREE']
@@ -468,7 +467,7 @@ def read_chunk_into_preset(preset: Preset, chunk_data: bytearray) -> bool:
     preset.version = read_b_uint(chunk_data, False)
     read_b_uint(chunk_data, False)  # param_count = read_b_uint(chunk_data, False)
     for k in preset.param_keys:
-        preset.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))
+        preset.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))[0]
 
     return True
 
