@@ -454,6 +454,7 @@ def process_fxp(data: bytes) -> Union[Preset, None]:
         print('Preset chunk data load failure')
         return None
 
+    preset.name = preset.name.rstrip('\x00')
     return preset
 
 
