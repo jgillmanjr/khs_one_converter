@@ -65,8 +65,12 @@ class Parameter:
             'property': self.name,
             'type': self.param_type,
         }
+        if self.param_type == 'number' and float(self.get_formatted_value()) % 1 == 0:
+            tvalue = int(float(self.get_formatted_value()))
+        else:
+            tvalue = self.get_formatted_value()
         element = et.Element('Value', attrib=attributes)
-        element.text = self.get_formatted_value()
+        element.text = str(tvalue)
         return element
 
 
@@ -222,7 +226,7 @@ class Preset:
         self.lfo2_rate_free = Parameter('LFO_2_RATE_FREE')  # Derives from LFO_2_RATE
         self.lfo2_rate_sync = Parameter('LFO_2_RATE_SYNC', 'number', 24)  # Derives from LFO_2_RATE
 
-        self.re_exclude_params = ['LFO_2_RATE', 'DELAY_TIME']
+        self.re_exclude_params = ['LFO_2_RATE', 'DELAY_TIME', 'MOD_ENV_DEPTH']
 
     def save_re(self) -> bytes:
         """
