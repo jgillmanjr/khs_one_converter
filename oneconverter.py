@@ -344,14 +344,13 @@ class Preset:
         return data
 
 
-def process_re(xml_data: bytes, preset_file: Path = Path('Test.file')) -> Union[Preset, None]:  # Preset name from file
+def process_re(preset_file: Path) -> Union[Preset, None]:  # Preset name from file
     """
-    Kick out a Reason Preset
-    :param xml_data:
+    Parse a Reason Preset
     :param preset_file:
     :return:
     """
-    jukebox_xml = et.XML(xml_data)
+    jukebox_xml = et.XML(preset_file.read_bytes())
 
     device_product_id = jukebox_xml[1].get('deviceProductID')
     if device_product_id != 'com.kilohearts.khsONE':
@@ -362,6 +361,7 @@ def process_re(xml_data: bytes, preset_file: Path = Path('Test.file')) -> Union[
 
     preset = Preset()
     preset.name = preset_file.stem
+    preset.version = CURRENT_VERSION  # Because we don't have that information from the repatch file
 
     dt16: Parameter
     dtms: Parameter
