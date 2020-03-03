@@ -419,15 +419,15 @@ def process_au(xml_data: bytes) -> Union[Preset, None]:
     return None
 
 
-def process_fxp(data: bytes) -> Union[Preset, None]:
+def process_fxp(preset_file: Path) -> Union[Preset, None]:
     """
-    Kick out an FXP Preset
+    Parse an FXP Preset
     :param data:
     :return:
     """
     preset = Preset()
 
-    data = bytearray(data)  # Now with 100% more mutability!
+    data = bytearray(preset_file.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho...
 
     chunk_magic = read_b_uint(data)
     read_b_uint(data)  # size = read_b_uint(data)
