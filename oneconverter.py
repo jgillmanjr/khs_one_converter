@@ -268,7 +268,9 @@ class Preset:
         jbprops.append(jbprops_o)
         jukebox_patch.append(jbprops)
 
-        return et.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=True, pretty_print=True)
+        return_xml = b'<?xml version="1.0"?>\n'  # We have to do this because Reason can't handle single quotes
+        return_xml += et.tostring(jukebox_patch, encoding='UTF-8', xml_declaration=False, pretty_print=True)
+        return return_xml
 
     def save_au(self) -> bytes:
         """
