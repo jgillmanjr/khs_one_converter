@@ -397,12 +397,13 @@ def process_re(preset_file: Path) -> Union[Preset, None]:  # Preset name from fi
     return preset
 
 
-def process_au(xml_data: bytes) -> Union[Preset, None]:
+def process_au(preset_file: Path) -> Union[Preset, None]:
     """
-    Kick out an AU Preset
-    :param xml_data:
+    Parse an AU Preset
+    :param preset_file:
     :return:
     """
+    xml_data = et.XML(preset_file.read_bytes())
     fx_id = int(find_au_value(xml_data, 'subtype').text)
     if fx_id != convert_magic('kHs1'):
         print('Preset does not appear to be for kHs ONE')
@@ -419,15 +420,18 @@ def process_au(xml_data: bytes) -> Union[Preset, None]:
     return None
 
 
-def process_fxp(preset_file: Path) -> Union[Preset, None]:
+def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
     """
     Parse an FXP Preset
-    :param data:
+    :param preset_data:
     :return:
     """
     preset = Preset()
 
-    data = bytearray(preset_file.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho...
+    if isinstance(preset_data, Path):
+        data = bytearray(preset_data.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho
+    else:
+        data = bytearray(preset_data)  # I think Rush once said "Why does it happen? Because it happens: Roll the bones"
 
     chunk_magic = read_b_uint(data)
     read_b_uint(data)  # size = read_b_uint(data)
