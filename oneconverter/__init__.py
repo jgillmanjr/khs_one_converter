@@ -5,7 +5,7 @@ Original ActionScript code courtesy of Kilohearts
 Python version started by Jason Gillman Jr.
 """
 
-from utils import convert_magic, range_pop, read_b_uint, write_uint_b
+from oneconverter.utils import convert_magic, range_pop, read_b_uint, write_uint_b
 from typing import Union
 from collections import OrderedDict
 from pathlib import Path
