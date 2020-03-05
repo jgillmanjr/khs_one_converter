@@ -7,9 +7,9 @@ Python version started by Jason Gillman Jr.
 
 __all__ = ['process_fxp', 'process_au', 'process_re']
 
-from .main import insert_param_chunk_into_fxp_preset, Parameter, Preset
+from .main import insert_param_chunk_into_fxp_preset, return_bank_presets, Parameter, Preset
 from .utils import convert_magic, find_au_value, range_pop, read_b_uint
-from typing import Union
+from typing import List, Union
 from pathlib import Path
 import lxml.etree as et
 import base64
@@ -140,3 +140,44 @@ def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
 
     preset.name = preset.name.rstrip('\x00')
     return preset
+
+
+def process_fxb(bank_file: Path) -> Union[List[Preset], None]:
+    """
+    Parse an FXB Bank
+    :param bank_file:
+    :return:
+    """
+
+    data = bytearray(bank_file.read_bytes())
+
+    chunk_magic = read_b_uint(data)
+    read_b_uint(data)  # size = read_b_uint(data)
+    fx_magic = read_b_uint(data)
+    read_b_uint(data)  # format_version = read_b_uint(data)
+    fx_id = read_b_uint(data)
+    version = read_b_uint(data)
+    num_programs = read_b_uint(data)
+
+    range_pop(data, 0, 128)
+
+    program_chunk_size = read_b_uint(data)
+    program_chunk_data = range_pop(data, 0, program_chunk_size)
+
+    if chunk_magic != convert_magic('CcnK'):
+        print('Invalid chunkMagic')
+        return None
+
+    if fx_magic != convert_magic('FBCh'):
+        print('Unsupported fxMagic')
+        return None
+
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not seem to be for kHs ONE')
+        return None
+
+    if version < CURRENT_VERSION:
+        print('Presets saved with a version of kHs ONE earlier than 1.014 are not supported')
+        return None
+
+    return return_bank_presets(program_chunk_data, prog_count=num_programs)

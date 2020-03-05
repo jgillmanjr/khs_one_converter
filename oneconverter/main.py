@@ -1,5 +1,6 @@
 from .utils import convert_magic, read_b_uint, range_pop, write_uint_b
 from collections import OrderedDict
+from typing import List
 import base64
 import lxml.etree as et
 import struct
@@ -18,6 +19,34 @@ def insert_param_chunk_into_fxp_preset(preset: 'Preset', chunk_data: bytearray) 
         preset.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))[0]
 
     return True
+
+
+def return_bank_presets(bank_prog_data: bytearray, prog_count: int = 100) -> List['Preset']:
+    """
+    Get the programs from the bank
+    :param bank_prog_data:
+    :param prog_count:
+    :return:
+    """
+    version = read_b_uint(bank_prog_data, False)
+
+    preset_list = []
+
+    for i in range(0, prog_count, 1):
+        preset = Preset()
+        preset.version = version
+        preset.name = range_pop(bank_prog_data, 0, 24).decode('utf-8').rstrip('\x00')  # Could still be padded...
+
+        param_chunk_size = read_b_uint(bank_prog_data, False)
+        param_chunk_data = range_pop(bank_prog_data, 0, param_chunk_size)
+
+        if not insert_param_chunk_into_fxp_preset(preset, param_chunk_data):
+            print(f'Preset chunk data load failure for bank program: {preset.name}')
+            continue  # I think we can get away with skipping the preset
+
+        preset_list.append(preset)
+
+    return preset_list
 
 
 class Parameter:
