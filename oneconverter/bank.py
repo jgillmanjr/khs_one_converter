@@ -66,7 +66,6 @@ class Bank:
         Return data representing an FXB file
         :return:
         """
-        # @TODO: This doesn't work yet - fix me
         bank_bytes = bytes()
 
         bank_bytes += write_uint_b(convert_magic('FBCh'))
@@ -101,8 +100,7 @@ class Bank:
         elif preset_list_len < 100:
             print('Preset count less than 100. Padding with the Init Patch.')
             presets = self.presets[:]
-            init_preset_data = base64.b64decode(Path(__file__).parent.joinpath('init_patch.b64').read_text(),
-                                                validate=True)
+            init_preset_data = base64.b64decode(Path(__file__).parent.joinpath('init_patch.b64').read_text())
             for i in range(0, 100 - preset_list_len, 1):
                 presets.append(process_fxp(init_preset_data))
         else:
@@ -114,7 +112,7 @@ class Bank:
         for p in presets:
             cropped_name = p.name[0:24] if len(p.name) >= 24 else p.name
             chunk_data += cropped_name.encode('utf-8')
-            for x in range(0, 28 - len(cropped_name)):
+            for x in range(0, 24 - len(cropped_name)):
                 chunk_data += b'\x00'
             p_data = p.return_fxp_param_chunk()
             chunk_data += write_uint_b(len(p_data), False)
