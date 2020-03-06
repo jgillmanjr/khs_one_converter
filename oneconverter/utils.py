@@ -2,30 +2,11 @@
 Utility functions for the ONE converter
 """
 from typing import Union
-import lxml.etree as et
+
+CURRENT_VERSION = 1014
 
 
-def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[et.Element, None]:
-    """
-    Get a particular value based on the key
-    :param plist_xml_bytes:
-    :param search_key:
-    :return:
-    """
-    plist = et.XML(plist_xml_bytes)
-
-    result_idx = None
-
-    for i, x in enumerate(plist[0]):
-        if x.tag == 'key' and x.text == search_key:
-            result_idx = i + 1
-            break
-
-    if result_idx is not None:
-        return plist[0][result_idx]
-
-
-def convert_magic(st_input: str):
+def convert_magic(st_input: str) -> int:
     """
     Do some bitwise magic on a string. I'm guessing this is for file type magic numbers
     :param st_input:

@@ -1,52 +1,34 @@
-from .utils import convert_magic, read_b_uint, range_pop, write_uint_b
+"""
+Preset and Param stuff
+"""
+
+from .utils import convert_magic, read_b_uint, range_pop, write_uint_b, CURRENT_VERSION
 from collections import OrderedDict
-from typing import List
+from pathlib import Path
+from typing import Union
 import base64
 import lxml.etree as et
 import struct
 
 
-def insert_param_chunk_into_fxp_preset(preset: 'Preset', chunk_data: bytearray) -> bool:
+def find_au_value(plist_xml_bytes: bytes, search_key: str) -> Union[et.Element, None]:
     """
-    Insert prameter chunk data into the preset
-    :param preset:
-    :param chunk_data:
+    Get a particular value based on the key
+    :param plist_xml_bytes:
+    :param search_key:
     :return:
     """
-    preset.version = read_b_uint(chunk_data, False)
-    read_b_uint(chunk_data, False)  # param_count = read_b_uint(chunk_data, False)
-    for k in preset.param_keys:
-        preset.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))[0]
+    plist = et.XML(plist_xml_bytes)
 
-    return True
+    result_idx = None
 
+    for i, x in enumerate(plist[0]):
+        if x.tag == 'key' and x.text == search_key:
+            result_idx = i + 1
+            break
 
-def return_bank_presets(bank_prog_data: bytearray, prog_count: int = 100) -> List['Preset']:
-    """
-    Get the programs from the bank
-    :param bank_prog_data:
-    :param prog_count:
-    :return:
-    """
-    version = read_b_uint(bank_prog_data, False)
-
-    preset_list = []
-
-    for i in range(0, prog_count, 1):
-        preset = Preset()
-        preset.version = version
-        preset.name = range_pop(bank_prog_data, 0, 24).decode('utf-8').rstrip('\x00')  # Could still be padded...
-
-        param_chunk_size = read_b_uint(bank_prog_data, False)
-        param_chunk_data = range_pop(bank_prog_data, 0, param_chunk_size)
-
-        if not insert_param_chunk_into_fxp_preset(preset, param_chunk_data):
-            print(f'Preset chunk data load failure for bank program: {preset.name}')
-            continue  # I think we can get away with skipping the preset
-
-        preset_list.append(preset)
-
-    return preset_list
+    if result_idx is not None:
+        return plist[0][result_idx]
 
 
 class Parameter:
@@ -351,7 +333,7 @@ class Preset:
         for x in range(0, 28 - len(cropped_name)):
             data += b'\x00'  # Spoiler alert: I'm a dumbass and found out bytes(0) doesn't work like I expected...
 
-        chunk_data = self._return_fxp_param_chunk()
+        chunk_data = self.return_fxp_param_chunk()
         data += write_uint_b(len(chunk_data))
         data += chunk_data
 
@@ -362,9 +344,9 @@ class Preset:
 
         return final_data
 
-    def _return_fxp_param_chunk(self) -> bytes:
+    def return_fxp_param_chunk(self) -> bytes:
         """
-        This does... something
+        Return a parameter chunk
         :return:
         """
         data = bytearray()
@@ -374,3 +356,140 @@ class Preset:
             data += struct.pack('<f', x.normalized_value)
 
         return data
+
+    def insert_param_chunk_into_fxp_preset(self, chunk_data: bytearray) -> bool:
+        """
+        Insert prameter chunk data into the preset. Bank originated
+        :param chunk_data:
+        :return:
+        """
+        self.version = read_b_uint(chunk_data, False)
+        read_b_uint(chunk_data, False)  # param_count = read_b_uint(chunk_data, False)
+        for k in self.param_keys:
+            self.parameters[k].normalized_value = struct.unpack('<f', range_pop(chunk_data, 0, 4))[0]
+
+        return True
+
+
+def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
+    """
+    Parse an FXP Preset
+    :param preset_data:
+    :return:
+    """
+    preset = Preset()
+
+    if isinstance(preset_data, Path):
+        data = bytearray(preset_data.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho
+    else:
+        data = bytearray(preset_data)  # I think Rush once said "Why does it happen? Because it happens: Roll the bones"
+
+    chunk_magic = read_b_uint(data)
+    read_b_uint(data)  # size = read_b_uint(data)
+    fx_magic = read_b_uint(data)
+    read_b_uint(data)  # format_version = read_b_uint(data)
+    fx_id = read_b_uint(data)
+    preset.version = read_b_uint(data)
+    read_b_uint(data)  # num_params = read_b_uint(data)
+    preset.name = range_pop(data, 0, 28).decode('utf-8')
+    chunk_size = read_b_uint(data)
+    chunk_data = range_pop(data, 0, chunk_size)
+
+    if chunk_magic != convert_magic('CcnK'):
+        print('Invalid chunkMagic')
+        return None
+
+    if fx_magic != convert_magic('FPCh'):
+        print('Unsupported fxMagic')
+        return None
+
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not seem to be for kHs ONE')
+        return None
+
+    if preset.version < CURRENT_VERSION:
+        print('Presets saved with a version of kHs ONE earlier than 1.014 are not supported')
+        return None
+
+    if not preset.insert_param_chunk_into_fxp_preset(chunk_data):
+        print('Preset chunk data load failure')
+        return None
+
+    preset.name = preset.name.rstrip('\x00')
+    return preset
+
+
+def process_re(preset_file: Path) -> Union[Preset, None]:  # Preset name from file
+    """
+    Parse a Reason Preset
+    :param preset_file:
+    :return:
+    """
+    jukebox_xml = et.XML(preset_file.read_bytes())
+
+    device_product_id = jukebox_xml[1].get('deviceProductID')
+    if device_product_id != 'com.kilohearts.khsONE':
+        print('Preset does not seem to be for kHs ONE')
+        return None
+
+    custom_properties = jukebox_xml[1][0]
+
+    preset = Preset()
+    preset.name = preset_file.stem
+    preset.version = CURRENT_VERSION  # Because we don't have that information from the repatch file
+
+    dt16: Parameter
+    dtms: Parameter
+    l2rs: Parameter
+    l2rf: Parameter
+    xfer_params = {}
+    for x in custom_properties:
+        param = x.get('property')
+        if param in preset.parameters:
+            preset.parameters[param].set_formatted_value(x.text)
+        else:
+            xfer_params[param] = Parameter(param, x.get('type'))
+            xfer_params[param].set_formatted_value(x.text)
+
+    dt16 = xfer_params['DELAY_TIME_16TH']
+    dtms = xfer_params['DELAY_TIME_MS']
+    if preset.parameters['DELAY_SYNC'].get_formatted_value():
+        preset.delay_time_16.set_formatted_value(dt16.get_formatted_value())
+        preset.parameters['DELAY_TIME'].set_formatted_value(dt16.get_formatted_value())
+    else:
+        preset.delay_time_ms.set_formatted_value(dtms.get_formatted_value())
+        preset.parameters['DELAY_TIME'].set_formatted_value(str(pow(dtms.normalized_value, float(4))))
+
+    l2rs = xfer_params['LFO_2_RATE_SYNC']
+    l2rf = xfer_params['LFO_2_RATE_FREE']
+    if preset.parameters['LFO_2_SYNC'].get_formatted_value():
+        preset.lfo2_rate_sync.set_formatted_value(l2rs.get_formatted_value())
+        preset.parameters['LFO_2_RATE'].set_formatted_value(l2rs.get_formatted_value())
+    else:
+        preset.lfo2_rate_free.set_formatted_value(l2rf.get_formatted_value())
+        preset.parameters['LFO_2_RATE'].set_formatted_value(l2rf.get_formatted_value())
+
+    return preset
+
+
+def process_au(preset_file: Path) -> Union[Preset, None]:
+    """
+    Parse an AU Preset
+    :param preset_file:
+    :return:
+    """
+    xml_data = et.XML(preset_file.read_bytes())
+    fx_id = int(find_au_value(xml_data, 'subtype').text)
+    if fx_id != convert_magic('kHs1'):
+        print('Preset does not appear to be for kHs ONE')
+        return None
+
+    fxp_data = base64.b64decode(find_au_value(xml_data, 'vstdata').text, validate=True)
+
+    preset = process_fxp(fxp_data)
+
+    if isinstance(preset, Preset):
+        preset.name = find_au_value(xml_data, 'name').text
+        return preset
+
+    return None
