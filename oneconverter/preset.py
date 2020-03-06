@@ -314,7 +314,9 @@ class Preset:
 
         plist.append(pld)
 
-        return et.tostring(plist, encoding='UTF-8', xml_declaration=True, pretty_print=True, doctype=dctyp)
+        return_xml = b'<?xml version="1.0" encoding="UTF-8"?>\n'
+        return_xml += et.tostring(plist, encoding='UTF-8', xml_declaration=False, pretty_print=True, doctype=dctyp)
+        return return_xml
 
     def return_fxp_data(self) -> bytes:
         """
