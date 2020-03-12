@@ -421,13 +421,21 @@ def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
     return preset
 
 
-def process_re(preset_file: Path) -> Union[Preset, None]:  # Preset name from file
+def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch') -> Union[Preset, None]:
     """
     Parse a Reason Preset
-    :param preset_file:
+    :param preset_data:
+    :param file_name:
     :return:
     """
-    jukebox_xml = et.XML(preset_file.read_bytes())
+    if isinstance(preset_data, Path):
+        data = bytearray(preset_data.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho
+        file_name = preset_data.stem
+    else:
+        data = bytearray(preset_data)
+        file_name = file_name.split('.')[0]
+
+    jukebox_xml = et.XML(data)
 
     device_product_id = jukebox_xml[1].get('deviceProductID')
     if device_product_id != 'com.kilohearts.khsONE':
@@ -437,7 +445,7 @@ def process_re(preset_file: Path) -> Union[Preset, None]:  # Preset name from fi
     custom_properties = jukebox_xml[1][0]
 
     preset = Preset()
-    preset.name = preset_file.stem
+    preset.name = file_name
     preset.version = CURRENT_VERSION  # Because we don't have that information from the repatch file
 
     dt16: Parameter
