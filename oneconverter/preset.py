@@ -482,13 +482,18 @@ def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch'
     return preset
 
 
-def process_au(preset_file: Path) -> Union[Preset, None]:
+def process_au(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
     """
     Parse an AU Preset
-    :param preset_file:
+    :param preset_data:
     :return:
     """
-    xml_data = et.XML(preset_file.read_bytes())
+    if isinstance(preset_data, Path):
+        data = bytearray(preset_data.read_bytes())  # Now with 100% more mutability! Probably should bytestream it, tho
+    else:
+        data = bytearray(preset_data)
+
+    xml_data = et.XML(data)
     fx_id = int(find_au_value(xml_data, 'subtype').text)
     if fx_id != convert_magic('kHs1'):
         print('Preset does not appear to be for kHs ONE')
