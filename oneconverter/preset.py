@@ -435,7 +435,7 @@ def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch'
         data = bytearray(preset_data)
         file_name = file_name.split('.')[0]
 
-    jukebox_xml = et.XML(data)
+    jukebox_xml = et.XML(data.decode('UTF-8'))
 
     device_product_id = jukebox_xml[1].get('deviceProductID')
     if device_product_id != 'com.kilohearts.khsONE':
@@ -493,7 +493,7 @@ def process_au(preset_data: Union[Path, bytes], **kwargs) -> Union[Preset, None]
     else:
         data = bytearray(preset_data)
 
-    xml_data = et.XML(data)
+    xml_data = et.XML(data.decode('UTF-8'))
     fx_id = int(find_au_value(xml_data, 'subtype').text)
     if fx_id != convert_magic('kHs1'):
         print('Preset does not appear to be for kHs ONE')
