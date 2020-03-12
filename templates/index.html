@@ -1,0 +1,33 @@
+<html lang="en">
+<head>
+    <title>kHs ONE Preset Converter</title>
+</head>
+<body>
+    <h1>kHs ONE Preset Converter</h1>
+    <p>
+        Welcome!<br />
+        While we hope that this utility is useful for converting kHs ONE presets between the various formats, please remember this isn't officially supported.<br />
+        That said, if you experience issues, feel free to swing by the kHs discord server and inquire!
+    </p>
+    <form action="convert" method="post" enctype="multipart/form-data">
+        <label for="preset_file">Select preset:</label>
+        <input type="file" name="preset_file" id="preset_file"/><br /><br />
+
+        <label for="from_fmt">Format to convert from: </label>
+        <select name="from_fmt" id="from_fmt">
+            <option value="fxp">VST (.fxp)</option>
+            <option value="aup">AU (.aupreset)</option>
+            <option value="res">Reason (.repatch)</option>
+        </select><br /><br />
+
+        <label for="to_fmt">Format to convert to: </label>
+        <select name="to_fmt" id="to_fmt">
+            <option value="fxp">VST (.fxp)</option>
+            <option value="aup">AU (.aupreset)</option>
+            <option value="res">Reason (.repatch)</option>
+        </select><br />
+
+        <button type="submit">Convert!</button>
+    </form>
+</body>
+</html>
