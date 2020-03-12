@@ -8,7 +8,7 @@ from typing import List, Union
 import base64
 
 
-def return_bank_presets(bank_prog_data: bytearray, prog_count: int = 100) -> List['Preset']:
+def return_bank_presets(bank_prog_data: bytearray, prog_count: int = 100, **kwargs) -> List['Preset']:
     """
     Get the programs from the bank
     :param bank_prog_data:

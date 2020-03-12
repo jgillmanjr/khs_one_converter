@@ -373,7 +373,7 @@ class Preset:
         return True
 
 
-def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
+def process_fxp(preset_data: Union[Path, bytes], **kwargs) -> Union[Preset, None]:
     """
     Parse an FXP Preset
     :param preset_data:
@@ -421,7 +421,7 @@ def process_fxp(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
     return preset
 
 
-def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch') -> Union[Preset, None]:
+def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch', **kwargs) -> Union[Preset, None]:
     """
     Parse a Reason Preset
     :param preset_data:
@@ -482,7 +482,7 @@ def process_re(preset_data: Union[Path, bytes], file_name: str = 'fake.reapatch'
     return preset
 
 
-def process_au(preset_data: Union[Path, bytes]) -> Union[Preset, None]:
+def process_au(preset_data: Union[Path, bytes], **kwargs) -> Union[Preset, None]:
     """
     Parse an AU Preset
     :param preset_data:
