@@ -37,3 +37,7 @@ def convert():
         return send_file(converted_data_stream, as_attachment=True, attachment_filename=parsed_preset_name)
 
     return 'Something happened. Sorry :( Hit us up on Discord.'
+
+
+if __name__ == '__main__':
+    app.run()
